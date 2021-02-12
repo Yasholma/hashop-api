@@ -77,10 +77,10 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Product $product)
     {
-        $product = Product::find($id);
-        if (!$product) return response()->json(['message' => 'Product not found.'], 404);
+        // $product = Product::find($id);
+        // if (!$product) return response()->json(['message' => 'Product not found.'], 404);
         return new ProductResource($product);
     }
 
@@ -124,6 +124,26 @@ class ProductController extends Controller
         return new ProductResource($product);
     }
 
+    private function checkQuantity($item)
+    {
+        $product = Product::find($item['id']);
+        if (!$product) {
+            return false;
+        }
+        return $product->quantity >= $item['quantity'] ? true : false;
+    }
+
+    private function updateQuantity($item)
+    {
+        $product = Product::find($item['id']);
+        if (!$product) {
+            return false;
+        }
+        $product->quantity = $product->quantity - $item['quantity'];
+        $product->save();
+        return true;
+    }
+
     public function checkout(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -144,6 +164,17 @@ class ProductController extends Controller
         $cartItems = $request->cartItems;
         for ($i = 0; $i < count($cartItems); $i++) {
             $item = $cartItems[$i];
+
+            $product = Product::find($item['id']);
+            if (!$product) {
+                return response()->json(['error' => 'Invalid product ID.'], 404);
+            }
+
+            // find product and check if product quantity inputed is not greater than what is in the inventory
+            if (!$this->checkQuantity($item)) {
+                return response()->json(['error' => 'Product quantity is exceeded.'], 412);
+            }
+
             CheckoutItem::create([
                 'checkout_id' => $checkout['id'],
                 'product_id' => $item['id'],
@@ -151,6 +182,9 @@ class ProductController extends Controller
                 'price' => $item['price'],
                 'sub_total' => $item['sub_total']
             ]);
+
+            // reduce quantity of all affect products
+            $this->updateQuantity($item);
         }
 
         return response('Checkout was successful', 201);
@@ -170,5 +204,10 @@ class ProductController extends Controller
         $product->delete();
 
         return response('', 204);
+    }
+
+    public static function productNotFound()
+    {
+        return response()->json(['message' => 'Product not found.'], 404);
     }
 }
