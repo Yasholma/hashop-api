@@ -19,5 +19,9 @@ Route::group(['prefix' => 'auth'], function () {
 });
 
 // products
-Route::resource('products', ProductController::class);
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{productId}', [ProductController::class, 'show']);
+Route::post('/products', [ProductController::class, 'store']);
+Route::patch('/products/{productId}', [ProductController::class, 'update']);
+Route::delete('/product/{productId}', [ProductController::class, 'delete']);
 Route::post('checkout', [ProductController::class, 'checkout']);

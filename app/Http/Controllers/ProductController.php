@@ -77,8 +77,10 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(Product $product)
+    public function show($id)
     {
+        $product = Product::find($id);
+        if (!$product) return response()->json(['message' => 'Product not found.'], 404);
         return new ProductResource($product);
     }
 
@@ -89,8 +91,11 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $id)
     {
+        $product = Product::find($id);
+        if (!$product) return response()->json(['message' => 'Product not found.'], 404);
+
         $validator = Validator::make($request->all(), [
             'name' => 'min:3|max:100',
             'description' => 'min:5',
@@ -127,7 +132,7 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors()->toJson(), 400);
+            return response()->json($validator->errors(), 400);
         }
 
         // save to checkout and retrieve id
@@ -157,8 +162,11 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Product $product)
+    public function destroy($id)
     {
+        $product = Product::find($id);
+        if (!$product) return response()->json(['message' => 'Product not found.'], 404);
+
         $product->delete();
 
         return response('', 204);
